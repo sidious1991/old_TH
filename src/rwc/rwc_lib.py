@@ -11,7 +11,7 @@ import utilities as ut
    This is Random Walk Controversy score.
    @param a: is the probability to continue (1 - a is the restart probability)
    @param data: tuple returned by computeData
-   @return the rwc of the diGraph
+   @return the rwc of the diGraph, c_x*r_x, c_y*r_y
 '''    
 def rwc(a, data):
     
@@ -27,7 +27,10 @@ def rwc(a, data):
    
     rwc_m = np.dot(np.transpose(sub_c_alpha),sub_m)
     
-    return rwc_m
+    c_x_r_x = np.dot(c_x, np.dot((1-a), m_e_x))
+    c_y_r_y = np.dot(c_y, np.dot((1-a), m_e_y))
+    
+    return rwc_m,c_x_r_x,c_y_r_y
    
    
 '''
@@ -106,6 +109,7 @@ def deltaRwc(path, graph, a, data, edge):
     @param k2: number of nodes of community Y to consider, 
                ordered depending on type t
     @param data: data computed by computeData in utilities module
+    @param r: the tuple returned by rwc function
     @return a tuple of two lists and two dictionaries:
             the first is a list of tuples. Each tuple is of type (edge:delta_of_rwc).
             The list returned is ordered in increasing order of delta_of_rwc.
@@ -113,7 +117,7 @@ def deltaRwc(path, graph, a, data, edge):
             The list returned is ordered in decreasing order of link_predictor.
             The two dictionaries are the unsorted versions of the two lists.
 '''
-def deltaPredictorOrdered(path, graph, a, k1, k2, data):
+def deltaPredictorOrdered(path, graph, a, k1, k2, data, r):
     
     if path is None and graph is None or (k1 < 0 or k2 < 0):
         return
@@ -121,6 +125,8 @@ def deltaPredictorOrdered(path, graph, a, k1, k2, data):
     g = nx.read_gpickle(path) if path is not None else graph
     sorted_x = data[8]
     sorted_y = data[9]
+    
+    b = (r[1]>=r[2]) #c_x*r_x >= c_y*r_y
      
     min_k1 = min(k1,len(sorted_x))
     min_k2 = min(k2,len(sorted_y))
@@ -130,17 +136,21 @@ def deltaPredictorOrdered(path, graph, a, k1, k2, data):
     
     adj_mat = np.array(nx.attr_matrix(g)[0])
     
-    for i in range(0,min_k1):
-        for j in range(0,min_k2):
-            if adj_mat[sorted_x[i][0]][sorted_y[j][0]] == 0:
-                e = (sorted_x[i][0],sorted_y[j][0])
-                dictio_delta.update({e : deltaRwc(None, g, a, data, e)})
-                dictio_predictor.update({e : ut.AdamicAdarIndex(g, e)})
-            if adj_mat[sorted_y[j][0]][sorted_x[i][0]] == 0:
-                e = (sorted_y[j][0],sorted_x[i][0])
-                dictio_delta.update({e : deltaRwc(None, g, a, data, e)})
-                dictio_predictor.update({e : ut.AdamicAdarIndex(g, e)})
-
+    if b:
+        for i in range(0,min_k1):
+            for j in range(0,min_k2):
+                if adj_mat[sorted_x[i][0]][sorted_y[j][0]] == 0:
+                    e = (sorted_x[i][0],sorted_y[j][0])
+                    dictio_delta.update({e : deltaRwc(None, g, a, data, e)})
+                    dictio_predictor.update({e : ut.AdamicAdarIndex(g, e)})
+    else:
+        for i in range(0,min_k1):
+            for j in range(0,min_k2):
+                if adj_mat[sorted_y[j][0]][sorted_x[i][0]] == 0:
+                    e = (sorted_y[j][0],sorted_x[i][0])
+                    dictio_delta.update({e : deltaRwc(None, g, a, data, e)})
+                    dictio_predictor.update({e : ut.AdamicAdarIndex(g, e)})
+            
     dict_delta_sorted = sorted(dictio_delta.iteritems(), key=lambda (k,v):(v,k))
     dict_predictor_sorted = sorted(dictio_predictor.iteritems(), key=lambda (k,v):(v,k), reverse=True)
             
@@ -228,10 +238,10 @@ if __name__ == '__main__':
         print "---------------------------------------------------------------------------------------------------------------------------"
     
         r = rwc(0.85, graphData)
-        print "RWC score =%13.10f"%r #%width.precisionf
+        print "RWC score =%13.10f"%r[0] #%width.precisionf
         print "---------------------------------------------------------------------------------------------------------------------------"
         
-        sorted_dp = deltaPredictorOrdered(None, g, 0.85, 40, 40, graphData)
+        sorted_dp = deltaPredictorOrdered(None, g, 0.85, 40, 40, graphData, r)
     
         R.append(fagin(sorted_dp,20))
         
@@ -241,10 +251,10 @@ if __name__ == '__main__':
         mygraphData = ut.computeData(None, new_graph, 0.85, i, percent_community=0.5)  
         
         r1 = rwc(0.85, mygraphData)
-        print "RWC score after addiction of accepted edges =%13.10f"%r1 #%width.precisionf
+        print "RWC score after addiction of accepted edges =%13.10f"%r1[0] #%width.precisionf
         print comment[i],"%13.10f"%opt
         print "Maximum Optimum Decrease RWC : =%13.10f"%max_opt
-        print "Real Total Decrease RWC =%13.10f"%(r-r1), " acceptance_ratio :",ratio
+        print "Real Total Decrease RWC =%13.10f"%(r[0]-r1[0]), " acceptance_ratio :",ratio
         print "-----------------------------------------------"
       
     print "-------------------------------------------------End of simulation---------------------------------------------------------"  
