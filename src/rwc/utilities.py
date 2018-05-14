@@ -82,7 +82,7 @@ def sortNodes(path, graph, comms, partition, type_sorting):
                          elif 1: nodes of each community ordered by ratio (in_degree)/(out_degree + 1)
                          elif 2: nodes of each community ordered by betweenness centrality
                          else: nodes of each community ordered by AvgInDegree 
-    @param percent_community: is the percentage of the high in_degree vertices to consider in each community
+    @param percent_community: is the percentage of sorted (by type_sorting) vertices to consider in each community
     @param a: is the probability to continue (1 - a is the restart probability)
     @return the communities of the graph, the personalization vectors for the communities,
             the c_x and c_y vectors, the partition and mats_x, mats_y tuple from M method,
