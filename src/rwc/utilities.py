@@ -48,7 +48,7 @@ def sortNodes(path, graph, comms, partition, type_sorting):
     elif type_sorting == 1:
         for i in comms[0]:
             degrees_x.append((i,g.in_degree(i)/(g.out_degree(i)+1)))
-            
+                    
         for j in comms[1]:
             degrees_y.append((j,g.in_degree(j)/(g.out_degree(j)+1)))
             
@@ -57,12 +57,10 @@ def sortNodes(path, graph, comms, partition, type_sorting):
         
     #betweenness centrality
     elif type_sorting == 2:
-        #centrality_x = nx.betweenness_centrality_subset(g, comms[0], comms[1], normalized=True)
-        degrees_x = g.in_degree(comms[0]) #comm X -- to be ordered
+        centrality_x = nx.betweenness_centrality_subset(g, comms[0], comms[1], normalized=True)
         centrality_y = nx.betweenness_centrality_subset(g, comms[1], comms[0], normalized=True)
     
-        #sorted_x = sorted([i for i in centrality_x.iteritems() if partition[i[0]] == 0], key=lambda (k,v):(v,k), reverse=False)
-        sorted_x = sorted(degrees_x ,key=lambda tup: tup[1], reverse=True)
+        sorted_x = sorted([i for i in centrality_x.iteritems() if partition[i[0]] == 0], key=lambda (k,v):(v,k), reverse=False)
         sorted_y = sorted([i for i in centrality_y.iteritems() if partition[i[0]] == 1], key=lambda (k,v):(v,k), reverse=False)
 
     else:

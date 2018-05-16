@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 import networkx as nx
 import utilities as ut
+import math
 
 '''
     Source : 'Reducing Controversy by Connecting Opposing Views' - Garimella et alii
@@ -29,7 +30,7 @@ def rwc(a, data):
     
     c_x_r_x = np.dot(c_x, np.dot((1-a), m_e_x))
     c_y_r_y = np.dot(c_y, np.dot((1-a), m_e_y))
-    
+        
     return rwc_m,c_x_r_x,c_y_r_y
    
    
@@ -126,7 +127,8 @@ def deltaPredictorOrdered(path, graph, a, k1, k2, data, r):
     sorted_x = data[8]
     sorted_y = data[9]
     
-    b = (r[1]>=r[2]) #c_x*r_x >= c_y*r_y
+    ratio = (r[1]/r[2]) #c_x*r_x/c_y*r_y
+    print r[1],r[2],ratio
      
     min_k1 = min(k1,len(sorted_x))
     min_k2 = min(k2,len(sorted_y))
@@ -136,21 +138,18 @@ def deltaPredictorOrdered(path, graph, a, k1, k2, data, r):
     
     adj_mat = np.array(nx.attr_matrix(g)[0])
     
-    if b:
-        for i in range(0,min_k1):
-            for j in range(0,min_k2):
-                if adj_mat[sorted_x[i][0]][sorted_y[j][0]] == 0:
-                    e = (sorted_x[i][0],sorted_y[j][0])
-                    dictio_delta.update({e : deltaRwc(None, g, a, data, e)})
-                    dictio_predictor.update({e : ut.AdamicAdarIndex(g, e)})
-    else:
-        for i in range(0,min_k1):
-            for j in range(0,min_k2):
-                if adj_mat[sorted_y[j][0]][sorted_x[i][0]] == 0:
-                    e = (sorted_y[j][0],sorted_x[i][0])
-                    dictio_delta.update({e : deltaRwc(None, g, a, data, e)})
-                    dictio_predictor.update({e : ut.AdamicAdarIndex(g, e)})
-            
+    for i in range(0,min_k1):
+        for j in range(0,min_k2):
+            if adj_mat[sorted_x[i][0]][sorted_y[j][0]] == 0:
+                e = (sorted_x[i][0],sorted_y[j][0])
+                dictio_delta.update({e : deltaRwc(None, g, a, data, e)})
+                dictio_predictor.update({e : ut.AdamicAdarIndex(g, e)})
+                
+            if adj_mat[sorted_y[j][0]][sorted_x[i][0]] == 0:
+                e = (sorted_y[j][0],sorted_x[i][0])
+                dictio_delta.update({e : deltaRwc(None, g, a, data, e)})
+                dictio_predictor.update({e : ut.AdamicAdarIndex(g, e)})
+                        
     dict_delta_sorted = sorted(dictio_delta.iteritems(), key=lambda (k,v):(v,k))
     dict_predictor_sorted = sorted(dictio_predictor.iteritems(), key=lambda (k,v):(v,k), reverse=True)
             
@@ -221,7 +220,7 @@ def fagin(data, k):
 
 if __name__ == '__main__':
     
-    g = nx.read_gpickle('../../outcomes/retweet_graph_beefban.pickle')
+    g = nx.read_gpickle('../../outcomes/parted_graph.pickle')
 
     R = []
     comment = ["Opt Total Decrease RWC -- in_degree type (HIGH-TO-HIGH) : ","Opt Total Decrease RWC -- ratio type : ","Opt Total Decrease RWC -- betweenness centrality : ", "Opt Total Decrease RWC -- avg in_degree type : "]
@@ -247,7 +246,7 @@ if __name__ == '__main__':
         
         print R[i][1]
         
-        (new_graph,opt,ratio,max_opt) = ut.addEdgeToGraph('../../outcomes/retweet_graph_beefban.pickle',R[i][0],R[i][1])
+        (new_graph,opt,ratio,max_opt) = ut.addEdgeToGraph('../../outcomes/parted_graph.pickle',R[i][0],R[i][1])
         mygraphData = ut.computeData(None, new_graph, 0.85, i, percent_community=0.5)  
         
         r1 = rwc(0.85, mygraphData)
